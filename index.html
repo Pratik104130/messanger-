@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premium WhatsApp Clone</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-database-compat.js"></script>
+
+</head>
+<body>
+
+<div class="chat-box">
+  <div class="header">
+    <span id="groupIndicator"></span>
+    <span id="onlineStatus">Offline</span>
+
+    <div id="headerButtons"></div>
+
+    <div id="adminDropdown">
+      <button id="adminToggleBtn">Admin ⬇</button>
+      <div id="adminMenu"></div>
+    </div>
+  </div>
+
+  <div id="loginContainer">
+    <input type="email" id="emailInput" placeholder="Enter your email">
+    <input type="text" id="nameInput" placeholder="Enter your name">
+    <button id="loginBtn">Login</button>
+  </div>
+
+  <div class="typing-indicator" id="typingIndicator"></div>
+  <div class="messages" id="messages"></div>
+
+  <div class="input-area" id="inputArea" style="display:none;">
+    <input id="messageInput" placeholder="Type a message...">
+    <button onclick="sendMessage()">Send</button>
+    <button id="secretMsgBtn" style="background:#6f42c1;color:white;">⏳ Secret</button>
+  </div>
+
+
+  <div class="bottom-buttons" id="bottomButtons" style="display:none;">
+    <div id="pinnedContainer">
+      📌 <span id="pinnedText"></span>
+      <button id="unpinBtn" style="float:right;background:red;color:white;padding:4px 8px;">Unpin</button>
+    </div>
+    <button onclick="clearAllForMe()">🧹 Clear My Chat</button>
+    <button id="exitGroupBtn" style="display:none;" onclick="exitGroup()">❌ Exit Group</button>
+    <button id="logoutBtn" onclick="logout()">🚪 Logout</button>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+<style>
+/* ===== Global Styles ===== */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #0f1115;
+  color: #fff;
+}
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-weight: bold;
+  transition: 0.2s;
+}
+button:hover { opacity: 0.85; }
+
+/* ===== Chat Box ===== */
+.chat-box {
+  max-width: 500px;
+  margin: 10px auto;
+  background: #1b1c22;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 30px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  height: 90vh;
+}
+
+/* ===== Header ===== */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg,#1f1f1f,#2c2c2c);
+  padding: 12px 15px;
+  font-weight: bold;
+  position: relative;
+}
+#groupIndicator { 
+  font-size: 14px;
+  color:#ffb700; }
+#onlineStatus {
+  font-size:12px; 
+  color:#7afc00; 
+  
+}
+
+/* Admin dropdown */
+#adminDropdown { position: relative; }
+#adminToggleBtn { background:#ff5722;color:white; }
+#adminMenu {
+  display: none;
+  position: absolute;
+  top:40px;
+  right:0;
+  background:#2b2b2b;
+  border-radius:10px;
+  min-width:160px;
+  overflow:hidden;
+  z-index:100;
+}
+#adminMenu button {
+  width: 100%;
+  text-align: left;
+  background:#2b2b2b;
+  color:white;
+  padding:10px;
+}
+#adminMenu button:hover { background:#3c3c3c; }
+
+/* ===== Messages ===== */
+.messages {
+  flex:3;
+  padding: 13px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.msg {
+  padding: 10px 13px;
+  border-radius: 15px;
+  max-width: 75%;
+  word-wrap: break-word;
+  position: relative;
+  font-size: 13px;
+  line-height: 1.3;
+}
+.sent { 
+  background:#D3FFCD;
+  margin-left:auto;
+  color:#000;
+  border-bottom-right-radius: 3px;
+
+
+  }
+
+.received { 
+  background:#5C968D;
+  margin-right:auto;
+  border-bottom-left-radius: 3px;
+  
+
+  }
+.time {
+  font-size:10px; 
+  color:#ccc; 
+  position:absolute; 
+  bottom:1px;
+  right:8px; }
+
+/* ===== Input area ===== */
+.input-area {
+  display: flex;
+  gap:5px;
+  padding:10px;
+  background:#2c2c2c;
+  align-items: center;
+}
+.input-area input {
+  flex:1;
+  padding:8px 10px;
+  border-radius:10px;
+  border:none;
+  background:#1f1f1f;
+  color:white;
+}
+.input-area input::placeholder { color:#888; }
+
+
+
+/* ===== Bottom Buttons ===== */
+.bottom-buttons {
+  display:flex;
+  flex-wrap: wrap;
+  gap:6px;
+  padding:10px;
+  background:#2c2c2c;
+}
+#pinnedContainer {
+  display:none;
+  background:#ffd700;
+  color:#000;
+  padding:8px;
+  border-radius:8px;
+  flex:1 1 100%;
+}
+#pinnedText { font-weight:bold; }
+
+/* ===== Login ===== */
+#loginContainer {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:15px;
+}
+#loginContainer input {
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  background:#1f1f1f;
+  color:white;
+}
+#loginContainer input::placeholder { color:#888; }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  bottom:15px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#444;
+  padding:10px 15px;
+  border-radius:8px;
+  opacity:0;
+  transition:0.3s;
+  z-index:999;
+}
+.toast.show {
+  opacity:1; 
+  
+}
+#logoutBtn{
+  background: #FF3B29;
+  border-radius: 4px;
+  position: absolute;
+ right: 10px;
+}
+
+/* ===== Typing indicator ===== */
+.typing-indicator {
+  padding:0 12px;
+  color:#aaa; 
+  font-size:12px;
+  }
+  
+  @media(width>700px){
+    #logoutBtn{
+  background: red;
+  border-radius: 4px;
+  position: absolute;
+  right: 260px;
+
+}
+  }
+</style>
+<script>
+// ===== Firebase config =====
+// ===== Firebase config =====
+const firebaseConfig = {
+  apiKey: "AIzaSyDfMLXwhp2HQ_vjtT0iVA6QbJ-70Aul97Y",
+  authDomain: "private-chat-app-604a9.firebaseapp.com",
+  databaseURL: "https://private-chat-app-604a9-default-rtdb.firebaseio.com/",
+  projectId: "private-chat-app-604a9",
+  storageBucket: "private-chat-app-604a9.appspot.com",
+  messagingSenderId: "105507128573",
+  appId: "1:105507128573:web:67289b1923e951339dea94"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ===== Notifications =====
+let lastMessageTimestamps = {};
+const notificationSound = new Audio("https://cdn.pixabay.com/download/audio/2021/09/29/audio_604b3f43e5.mp3?filename=message-tone-47192.mp3");
+
+// Request notification permission
+function requestNotificationPermission() {
+  if ("Notification" in window) {
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        showToast("🔔 Notifications enabled!");
+      } else {
+        showToast("Notifications blocked.");
+      }
+    });
+  }
+}
+// ===== DOM =====
+const messagesDiv      = document.getElementById("messages"),
+      inputArea        = document.getElementById("inputArea"),
+      loginContainer   = document.getElementById("loginContainer"),
+      onlineStatus     = document.getElementById("onlineStatus"),
+      typingIndicator  = document.getElementById("typingIndicator"),
+      bottomButtons    = document.getElementById("bottomButtons"),
+      exitGroupBtn     = document.getElementById("exitGroupBtn"),
+      groupIndicator   = document.getElementById("groupIndicator"),
+      pinnedContainer  = document.getElementById("pinnedContainer"),
+      pinnedTextEl     = document.getElementById("pinnedText"),
+      unpinBtn         = document.getElementById("unpinBtn"),
+      adminDropdown    = document.getElementById("adminDropdown"),
+      adminToggleBtn   = document.getElementById("adminToggleBtn"),
+      adminMenu        = document.getElementById("adminMenu");
+
+// ===== Variables =====
+let username = "", email = "", userEmail = "", currentGroup = "everyone", typingTimeout;
+let adminMenuVisible = false;
+const adminEmail = "pratik@gmail.com".replace(/\./g,"_");
+const typingRef = db.ref('typing');
+const scheduledExpiryTimers = {};
+let cleanupIntervalHandle = null;
+
+// ===== Login & Auto-login =====
+window.addEventListener("DOMContentLoaded", ()=>{
+  const savedName = localStorage.getItem("username");
+  const savedEmail = localStorage.getItem("email");
+  const savedGroup = localStorage.getItem("currentGroup") || "everyone";
+
+  if(savedName && savedEmail){
+    username = savedName;
+    email = savedEmail;
+    userEmail = email;
+    currentGroup = savedGroup;
+    showChat();
+  } else loginContainer.style.display = "flex";
+});
+
+document.getElementById("loginBtn").addEventListener("click", ()=>{
+  const n = document.getElementById("nameInput").value.trim();
+  const e = document.getElementById("emailInput").value.trim();
+  if(n && e){
+    username = n;
+    email = e.replace(/\./g,"_");
+    userEmail = email;
+    localStorage.setItem("username", n);
+    localStorage.setItem("email", email);
+    showChat();
+  } else alert("Enter name & email");
+});
+
+// ===== Show Chat =====
+function showChat(){
+  loginContainer.style.display="none";
+  inputArea.style.display="flex";
+  bottomButtons.style.display="flex";
+  onlineStatus.innerText="Online";
+  setUserOnline(true);
+  showAdminButtons();
+  showGroupButtons();
+  updateGroupUI();
+  listenTyping();
+  loadMessages();
+  updateGroupIndicator();
+  startPeriodicCleanup();
+  listenPinnedMessage();
+  requestNotificationPermission();
+  listenKickedStatus();
+}
+
+// ===== Online Status =====
+function setUserOnline(status){
+  const ref = db.ref('users/' + email);
+  ref.set({online:status,name:username,group:currentGroup});
+  ref.onDisconnect().set({online:false,name:username,group:currentGroup});
+}
+
+// ===== Typing =====
+document.getElementById("messageInput").addEventListener("input", ()=>{
+  typingRef.set({name:username,email:email,group:currentGroup});
+  clearTimeout(typingTimeout);
+  typingTimeout=setTimeout(()=>typingRef.remove(),1000);
+});
+
+function listenTyping(){
+  typingRef.on('value', snap=>{
+    const data = snap.val();
+    typingIndicator.innerText = (data && data.email!==email && data.group===currentGroup) ? data.name+" is typing..." : "";
+  });
+}
+
+// ===== Send Messages =====
+function sendMessage() {
+  const msg = document.getElementById("messageInput").value.trim();
+  if (!msg) return;
+  
+  const remKey = email.replace(/\./g, "_");
+  
+  // 1️⃣ Check if user is muted
+  db.ref('muted/' + remKey).get().then(snap => {
+    const muteUntil = snap.val();
+    if (muteUntil && Date.now() < muteUntil) {
+      showToast("You are muted! Wait for a while.");
+      return; // Stop sending
+    }
+    
+    // 2️⃣ Check banned words
+    db.ref('bannedWords').get().then(bSnap => {
+      const banned = bSnap.val() || [];
+      const lowerMsg = msg.toLowerCase();
+      
+      // Check if message contains any banned word
+      const containsBanned = banned.some(word => lowerMsg.includes(word.toLowerCase()));
+      if (containsBanned) {
+        showToast("Message contains banned words!");
+        return; // Stop sending
+      }
+      
+      // 3️⃣ Send message if allowed
+      const now = new Date();
+      const time = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+      db.ref("messages/" + currentGroup).push().set({
+        name: username,
+        email: email,
+        text: msg,
+        time: time,
+        deleted: false
+      });
+      
+      document.getElementById("messageInput").value = "";
+      typingRef.remove();
+    });
+  });
+}
+// ===== Groups =====
+function showGroupButtons(){
+  const joinBtn = document.createElement("button");
+  joinBtn.innerText = "📋 Join Group";
+  joinBtn.style.background="#005c4b"; joinBtn.style.color="white";
+  joinBtn.onclick = joinGroupPrompt;
+  headerButtons.appendChild(joinBtn);
+}
+
+function joinGroupPrompt(){
+  db.ref("groups").get().then(snap=>{
+    if(!snap.exists()){ alert("No secret groups"); return; }
+    const groups = snap.val();
+    const gnames = Object.keys(groups);
+    const gname = prompt("Available groups:\n"+gnames.join("\n")+"\n\nEnter group name to join:");
+    if(gname && groups[gname]){
+      const key = prompt("Enter passkey for "+gname);
+      if(key === groups[gname].passkey){
+        currentGroup = gname;
+        localStorage.setItem("currentGroup",currentGroup);
+        updateGroupUI();
+        loadMessages();
+        updateGroupIndicator();
+        showToast("✅ Joined "+gname);
+      } else alert("❌ Wrong passkey!");
+    }
+  });
+}
+
+function updateGroupUI(){ exitGroupBtn.style.display = currentGroup==="everyone"?"none":"inline-block"; }
+function updateGroupIndicator(){ groupIndicator.innerText=currentGroup==="everyone"?"":"🔒 "+currentGroup; }
+
+// ===== Logout =====
+function logout(){
+  clearAllScheduledExpiryTimers();
+  stopPeriodicCleanup();
+  if(email) db.ref('users/' + email).set({online:false,name:username,group:currentGroup});
+  localStorage.removeItem("username");
+  localStorage.removeItem("email");
+  localStorage.removeItem("currentGroup");
+  username=""; email=""; userEmail=""; currentGroup="everyone";
+  inputArea.style.display="none";
+  bottomButtons.style.display="none";
+  loginContainer.style.display="flex";
+  messagesDiv.innerHTML = "";
+  headerButtons.innerHTML = "";
+  groupIndicator.innerText = "";
+  onlineStatus.innerText = "Offline";
+  showToast("Logged out!");
+}
+
+// ===== Toast =====
+function showToast(msg){ 
+  const t=document.createElement("div"); 
+  t.className="toast"; 
+  t.innerText=msg; 
+  document.body.appendChild(t); 
+  setTimeout(()=>t.classList.add("show"),100); 
+  setTimeout(()=>{ t.classList.remove("show"); setTimeout(()=>document.body.removeChild(t),400); },3000); 
+}
+// ===== Admin Panel =====
+function showAdminButtons() {
+  // Show admin dropdown only for admin email
+  adminDropdown.style.display = (email === adminEmail) ? "inline-block" : "none";
+  if (email !== adminEmail) return;
+
+  // Toggle admin menu visibility
+  adminToggleBtn.onclick = () => {
+    adminMenuVisible = !adminMenuVisible;
+    adminMenu.style.display = adminMenuVisible ? "block" : "none";
+  };
+
+  // Clear previous menu items
+  adminMenu.innerHTML = "";
+
+  // Admin menu items
+  const options = [
+    {
+      text: "🧹 Delete All",
+      color: "#b91c1c",
+      action: () => {
+        if (confirm("Delete ALL chats?")) db.ref("messages/" + currentGroup).remove();
+      }
+    },
+    {
+      text: "➕ New Group",
+      color: "#fff",
+      textColor: "#000",
+      action: () => {
+        const gname = prompt("Enter group name");
+        const gpass = prompt("Enter group passkey");
+        if (gname && gpass) {
+          db.ref("groups/" + gname).set({ passkey: gpass });
+          showToast("Group created!");
+        }
+      }
+    },
+    {
+      text: "👥 Members",
+      color: "#005c4b",
+      action: () => {
+        db.ref('users').get().then(snap => {
+          if (!snap.exists()) { alert("No members online"); return; }
+          const users = snap.val();
+          const list = Object.keys(users)
+            .map(k => users[k].name + " (" + k.replace(/_/g, ".") + ") - " + (users[k].online ? "🟢 Online" : "🔴 Offline"))
+            .join("\n");
+          alert("Members:\n" + list);
+        });
+      }
+    },
+    {
+      text: "📢 Broadcast",
+      color: "#ff9800",
+      textColor: "#000",
+      action: () => {
+        const msg = prompt("Enter broadcast message:");
+        if (msg) {
+          const now = new Date();
+          const time = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+          db.ref("messages/everyone").push().set({
+            name: "Admin",
+            email: email,
+            text: msg,
+            time: time,
+            deleted: false,
+            pinned: true
+          });
+          showToast("Broadcast sent!");
+        }
+      }
+    },
+    {
+      text: "❌ Remove Member",
+      color: "#b91c1c",
+      action: () => {
+        const remEmail = prompt("Enter email of the member to remove:").trim();
+        if (!remEmail) return;
+        const remKey = remEmail.replace(/\./g, "_");
+
+        // Remove user
+        db.ref('users/' + remKey).remove()
+          .then(() => {
+            // Remove all their messages in all groups
+            db.ref("messages").get().then(snap => {
+              if (!snap.exists()) return;
+              const allGroups = snap.val();
+              for (const groupName in allGroups) {
+                const groupMsgs = allGroups[groupName];
+                for (const msgKey in groupMsgs) {
+                  if (groupMsgs[msgKey].email === remKey) {
+                    db.ref(`messages/${groupName}/${msgKey}`).remove();
+                  }
+                }
+              }
+            });
+
+            // Kick for auto logout
+            db.ref('kicked/' + remKey).set(true);
+            showToast(remEmail + " removed!");
+          })
+          .catch(err => showToast("Error: " + err.message));
+      }
+    },
+    {
+      text: "🔇 Mute Member",
+      color: "#ff9800",
+      action: () => {
+        const remEmail = prompt("Enter email of member to mute:").trim();
+        if (!remEmail) return;
+        const remKey = remEmail.replace(/\./g, "_");
+        const duration = parseInt(prompt("Enter mute duration in seconds:"));
+        if (duration > 0) {
+          const muteUntil = Date.now() + duration * 1000;
+          db.ref('muted/' + remKey).set(muteUntil);
+          showToast(remEmail + " muted for " + duration + " seconds!");
+        }
+      }
+    },
+    {
+      text: "🚫 Manage Banned Words",
+      color: "#b91c1c",
+      action: () => {
+        db.ref('bannedWords').get().then(snap => {
+          let bannedList = snap.val() || [];
+          const action = prompt(
+            "Current banned words: " + bannedList.join(", ") +
+            "\n\nType 'add word1,word2' to add or 'remove word1,word2' to remove:"
+          );
+          if (!action) return;
+
+          const parts = action.split(' ');
+          const command = parts[0].toLowerCase();
+          const words = parts.slice(1).join(' ').split(',').map(w => w.trim()).filter(Boolean);
+
+          if (command === 'add') {
+            bannedList = [...new Set([...bannedList, ...words])];
+          } else if (command === 'remove') {
+            bannedList = bannedList.filter(w => !words.includes(w));
+          } else {
+            showToast("Invalid command! Use 'add' or 'remove'.");
+            return;
+          }
+
+          db.ref('bannedWords').set(bannedList)
+            .then(() => {
+              showToast("Banned words updated!");
+
+              // Delete messages containing banned words in all groups
+              db.ref("messages").get().then(snap => {
+                if (!snap.exists()) return;
+                const allGroups = snap.val();
+                for (const groupName in allGroups) {
+                  const groupMsgs = allGroups[groupName];
+                  for (const key in groupMsgs) {
+                    const text = groupMsgs[key].text.toLowerCase();
+                    const containsBanned = bannedList.some(word => text.includes(word.toLowerCase()));
+                    if (containsBanned) {
+                      db.ref(`messages/${groupName}/${key}`).remove();
+                    }
+                  }
+                }
+              });
+            })
+            .catch(err => showToast("Error: " + err.message));
+        });
+      }
+    },
+    {
+      text: "🔒 Lock Group",
+      color: "#ff4500",
+      action: () => {
+        const duration = parseInt(prompt("Enter lock duration in seconds:"));
+        if (!duration || duration <= 0) return showToast("Invalid duration!");
+        const unlockTime = Date.now() + duration * 1000;
+        db.ref("groupLocks/" + currentGroup).set(unlockTime).then(() => {
+          showToast("Group locked for " + duration + " seconds!");
+        });
+      }
+    },
+  {
+  text: "⚠️ Review Reports",
+  color: "#ff9800",
+  action: () => {
+    db.ref("reports").get().then(snap => {
+      if (!snap.exists()) return alert("No reports yet!");
+      const reports = snap.val();
+      const keys = Object.keys(reports);
+      if (keys.length === 0) return alert("No reports yet!");
+      
+      let reportList = keys.map((k, i) => `${i+1}. "${reports[k].message}" by ${reports[k].sender} in group ${reports[k].group}\nReason: ${reports[k].reason}`).join("\n\n");
+      
+      let choice = prompt("Reported Messages:\n\n" + reportList + "\n\nEnter the number to delete that message, or Cancel to exit:");
+      if (!choice) return;
+      
+      const index = parseInt(choice) - 1;
+      if (isNaN(index) || index < 0 || index >= keys.length) return showToast("Invalid choice!");
+      
+      const reportKey = keys[index];
+      const report = reports[reportKey];
+      
+      // Delete the reported message
+      db.ref(`messages/${report.group}`).orderByChild('text').equalTo(report.message).get().then(snap2 => {
+        if (snap2.exists()) {
+          snap2.forEach(msgSnap => {
+            if (msgSnap.val().email === report.sender) {
+              db.ref(`messages/${report.group}/${msgSnap.key}`).remove();
+            }
+          });
+        }
+        // Remove the report from reports
+        db.ref(`reports/${reportKey}`).remove();
+        showToast("Reported message deleted!");
+      });
+    });
+  }
+}
+  ];
+
+  // Create buttons dynamically
+  options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.innerText = opt.text;
+    btn.style.width = "100%";
+    btn.style.padding = "10px";
+    btn.style.background = opt.color;
+    btn.style.color = opt.textColor || "#fff";
+    btn.style.border = "none";
+    btn.style.cursor = "pointer";
+    btn.style.textAlign = "left";
+    btn.onclick = () => {
+      opt.action();
+      adminMenu.style.display = "none";
+      adminMenuVisible = false;
+    };
+    btn.onmouseenter = () => btn.style.opacity = 0.8;
+    btn.onmouseleave = () => btn.style.opacity = 1;
+    adminMenu.appendChild(btn);
+  });
+
+  // Click outside to close
+  window.addEventListener("click", (e) => {
+    if (!adminDropdown.contains(e.target)) {
+      adminMenu.style.display = "none";
+      adminMenuVisible = false;
+    }
+  });
+}
+function removeBannedMessages() {
+  // 1️⃣ Get banned words from Firebase
+  db.ref('bannedWords').get().then(bSnap => {
+    const banned = bSnap.val() || [];
+    if (banned.length === 0) return; // Nothing to remove
+    
+    // 2️⃣ Get all messages in current group
+    db.ref("messages/" + currentGroup).get().then(snap => {
+      if (!snap.exists()) return;
+      const msgs = snap.val();
+      for (const key in msgs) {
+        const text = msgs[key].text.toLowerCase();
+        // 3️⃣ Check if message contains banned word
+        const containsBanned = banned.some(word => text.includes(word.toLowerCase()));
+        if (containsBanned) {
+          db.ref(`messages/${currentGroup}/${key}`).remove();
+        }
+      }
+    });
+  });
+}
+// ===== Listen if current user is kicked =====
+function listenKickedStatus() {
+  if (!email) return;
+  const kickedRef = db.ref('kicked/' + email);
+  kickedRef.on('value', snap => {
+    if (snap.exists() && snap.val() === true) {
+      showToast("You have been removed by Admin!");
+      logout(); // auto-logout
+      kickedRef.remove(); // clean up kicked flag
+    }
+  });
+}
+// ===== Show Members =====
+function showGroupMembers(){
+  db.ref('users').get().then(snap=>{
+    if(!snap.exists()){ alert("No members online"); return; }
+    const users = snap.val();
+    const list = Object.keys(users).map(k=>{
+      return users[k].name + " (" + k.replace(/_/g,".") + ")";
+    }).join("\n");
+    alert("Members:\n" + list);
+  });
+}
+
+// ===== Load & Render Messages =====
+function loadMessages(){
+  messagesDiv.innerHTML="";
+  db.ref("messages/"+currentGroup).on('value', snap=>{
+    messagesDiv.innerHTML="";
+    if(!snap.exists()) return;
+    const msgs = snap.val();
+    for(let key in msgs) renderMessage(key, msgs[key]);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  });
+}
+
+function renderMessage(key, msg) {
+  if (msg.deleted) return;
+  const div = document.createElement("div");
+  div.className = "msg " + (msg.email === email ? "sent" : "received");
+  div.innerHTML = `<strong>${msg.name}</strong>: ${msg.text} <span class="time">${msg.time}</span>`;
+  
+  // Admin pin button
+  if (email === adminEmail && !msg.pinned) {
+    const pinBtn = document.createElement("button");
+    pinBtn.innerText = "📌";
+    pinBtn.style.marginLeft = "5px";
+    pinBtn.onclick = () => { pinMessage(key, msg.text); };
+    div.appendChild(pinBtn);
+  }
+  
+  // ✅ Add Report button for normal users (not admin and not sender)
+  if (msg.email !== email && email !== adminEmail) {
+    const reportBtn = document.createElement("button");
+    reportBtn.innerText = "🚩 Report";
+    reportBtn.style.marginLeft = "5px";
+    reportBtn.style.fontSize = "10px";
+    reportBtn.style.cursor = "pointer";
+    reportBtn.style.height = "30px";
+    reportBtn.onclick = () => reportMessage(msg, key, currentGroup);
+    div.appendChild(reportBtn);
+  }
+  
+  messagesDiv.appendChild(div);
+}
+
+function reportMessage(msgData, msgKey, groupName) {
+  const reason = prompt("Why are you reporting this message?");
+  if (!reason) return;
+  
+  const report = {
+    user: email, // reporter
+    message: msgData.text,
+    sender: msgData.email,
+    group: groupName,
+    time: new Date().toISOString(),
+    reason: reason
+  };
+  
+  db.ref("reports").push(report)
+    .then(() => showToast("Message reported to admin!"))
+    .catch(err => showToast("Error: " + err.message));
+}
+
+// Add emoji to input
+function addEmoji(e) {
+  const input = document.getElementById("messageInput");
+  input.value += e;
+  input.focus();
+}
+
+// Close picker if click outside
+document.addEventListener("click", (e) => {
+  
+  const btn = document.querySelector(".input-area button:last-child"); // emoji button
+  if (!picker.contains(e.target) && e.target !== btn) {
+    picker.style.display = "none";
+  }
+});
+// ===== Pinned Messages =====
+function pinMessage(key, text){
+  db.ref('pinned').set({key:key,text:text});
+  showToast("Message pinned!");
+}
+
+function listenPinnedMessage(){
+  db.ref('pinned').on('value', snap=>{
+    const data = snap.val();
+    if(data){ 
+      pinnedContainer.style.display="block";
+      pinnedTextEl.innerText = data.text;
+    } else pinnedContainer.style.display="none";
+  });
+}
+
+unpinBtn.addEventListener("click", ()=>{
+  db.ref('pinned').remove();
+  showToast("Message unpinned!");
+});
+
+// ===== Secret Messages / Auto Delete =====
+function scheduleExpiryForMessage(key, seconds){
+  if(scheduledExpiryTimers[key]) clearTimeout(scheduledExpiryTimers[key]);
+  scheduledExpiryTimers[key] = setTimeout(()=>{
+    db.ref("messages/"+currentGroup+"/"+key+"/deleted").set(true);
+    delete scheduledExpiryTimers[key];
+  }, seconds*1000);
+}
+
+function clearAllScheduledExpiryTimers(){
+  for(let k in scheduledExpiryTimers) clearTimeout(scheduledExpiryTimers[k]);
+}
+
+// ===== Secret Message Button =====
+document.getElementById("secretMsgBtn").addEventListener("click", ()=>{
+  const msg = prompt("Enter secret message (will auto delete in 10s):");
+  if(msg){
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+    const ref = db.ref("messages/"+currentGroup).push();
+    ref.set({name:username,email:email,text:msg,time:time,deleted:false});
+    scheduleExpiryForMessage(ref.key, 10);
+  }
+});
+
+// ===== Clear Chat for Me =====
+function clearAllForMe(){
+  messagesDiv.innerHTML="";
+  showToast("Cleared your chat view!");
+}
+
+// ===== Exit Group =====
+function exitGroup(){
+  clearAllScheduledExpiryTimers();
+  currentGroup="everyone";
+  localStorage.setItem("currentGroup",currentGroup);
+  updateGroupUI();
+  loadMessages();
+  updateGroupIndicator();
+  showToast("Exited group, back to Everyone");
+}
+
+// ===== Periodic Cleanup (optional) =====
+function startPeriodicCleanup(){
+  cleanupIntervalHandle = setInterval(()=>{ /* implement cleanups if needed */ },60000);
+}
+function stopPeriodicCleanup(){
+  if(cleanupIntervalHandle) clearInterval(cleanupIntervalHandle);
+}
+</script>
+</body>
+</html>

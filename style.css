@@ -1,0 +1,231 @@
+body {margin:0;font-family:'Segoe UI',sans-serif;background:#0b141a;color:white;  display:flex;justify-content:center;align-items:center;height:93vh;animation: fadePage 0.4s ease-in-out;
+}
+@keyframes fadePage {
+  from { opacity:0; transform:translateY(20px); }
+  to { opacity:1; transform:translateY(0); }
+}
+  
+.chat-box{
+  width:95%;
+  max-width:400px;
+  height:90vh;
+  background:#B7B7B7;
+  border-radius:15px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+box-shadow:0 0 15pxrgba(217,217,217, 1);
+  
+}
+
+
+.header{
+  background:#FF851B;
+  padding:15px;
+  font-weight:bold;
+  text-align:center;
+  position:relative;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+ box-shadow:0 2px 4px rgba(0,0,0,0.3)
+  ;}
+
+.header-buttons{
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+  
+}
+  
+.header-buttons button{
+  display:flex;
+  align-items:center;
+  gap:3px;
+  font-size:13px;
+  padding:4px 6px;
+  
+}
+
+.online-status{
+  font-size:12px;
+  color:#000;
+  position:absolute;
+  top:50%;
+  left:10px;
+  transform:translateY(-50%);
+  
+}
+.online-status::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #25d366;
+  margin-right: 6px;
+  box-shadow: 0 0 6px #25d366;
+}
+.typing-indicator {
+  font-size: 13px;
+  color: #ccc;
+  text-align: left;
+  margin: 5px 10px;
+  animation: blink 1s infinite alternate;
+  
+}
+@keyframes blink {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+.messages{
+  flex:1;
+  padding:10px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  position:relative;
+  scroll-behavior: smooth;
+}
+.msg {
+  padding: 2px 14px;
+  border-radius: 16px;
+  max-width: 80%;
+  font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.25s ease-in-out;
+}
+button:hover {
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+  transform: scale(1.03);
+}
+.sent {
+  background: linear-gradient(135deg, #ff8800, #e56a00);
+  color: #fff;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.received {
+  background: #2a3942;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+.time{
+  font-size:11px;
+  color:#bbb;
+  margin-top:4px;
+  
+  text-align:right;
+  
+}
+.deleted{
+  font-style:italic;
+  color:#B7B7B7;
+  text-align:center;
+  
+}
+.input-area{
+  display:flex;
+  background:#464646;
+  padding:10px;
+  box-shadow:0 -2px 5px rgba(0,0,0,0.3);
+  border-top:1px solid #333;
+  
+}
+input{
+  flex:1;
+  padding:10px;
+  border:none;
+  border-radius:20px;
+  outline:none;
+  background:#E0E0E0;
+  color:#707070;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,0.3);
+  
+}
+button{
+  background:black;
+  color:white;
+  border:none;
+  border-radius:20px;
+  padding:10px 15px;
+  cursor:pointer;
+  margin-left: 10px;
+  box-shadow:0 2px 4px rgba(0,0,0,0.7);}
+
+#loginContainer{
+  width:89%;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  
+}
+
+.bottom-buttons{
+  display:flex;
+  justify-content:space-around;
+  padding:10px;
+  background:#5E5E5E;
+  
+}
+
+.bottom-buttons button{
+  border-radius:12px;
+  padding:6px 12px;
+  font-size:13px;
+  
+}
+
+#logout{
+ background: red;
+font-size: 14px;
+font-weight: 700;
+border-radius:5px}
+
+.toast {
+  position: fixed;
+  bottom: 20px; 
+  right: 20px;
+  background: #202c33;
+  color:white;
+  padding: 12px 18px;
+  border-radius: 12px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4);
+  font-size:14px;
+  opacity:0;
+  pointer-events:none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  z-index:1000;
+  
+}
+
+.toast.show {
+  opacity:1;
+  pointer-events:auto;
+  transform:translateY(-10px);
+  
+}
+
+
+.group-indicator{
+  font-size:12px;
+  color:#ff0;
+  margin-left:7px;
+  
+}
+
+
+@keyframes fadeIn{
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media(max-width:400px){.header-buttons button{font-size:11px;padding:3px 5px;}}
